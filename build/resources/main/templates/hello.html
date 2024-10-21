@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test</title>
+    <script type="text/javascript">
+        var ws;
+        function connect() {
+            const username = document.getElementById("username").value;
+            ws = new WebSocket(`ws://localhost:8080/ws?name=${username}`);
+
+            ws.onopen = function() {
+                document.getElementById("status").innerText = "Connected";
+            };
+
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    populateNamesDropdown(data.payload);
+
+                } catch (e) {
+                    document.getElementById("messages").innerHTML += event.data + '<br>';
+
+                }
+                // // Check if the path is for namesList and populate the dropdown
+                // if (data.path === '/namesList') {
+                //     populateNamesDropdown(data.payload);
+                //
+                // } else {
+                //     console.log(event.data)
+                //     document.getElementById("messages").innerHTML += event.data + '<br>';
+                // }
+            };
+
+            ws.onclose = function() {
+                document.getElementById("status").innerText = "Disconnected";
+            };
+        }
+
+        function populateNamesDropdown(namesList) {
+            var dropdown = document.getElementById("userDropdown");
+            dropdown.innerHTML = ''; // Clear previous options
+            namesList.forEach(function(name) {
+                var option = document.createElement("option");
+                option.value = name;
+                option.text = name;
+                dropdown.appendChild(option);
+            });
+        }
+
+        function sendBroadcast() {
+            var message = document.getElementById("broadcastMessage").value;
+            // Sending properly formatted JSON
+            var payload = JSON.stringify({
+                "payload": {
+                    "message": message,
+                    "type": 0
+                },
+                "path": "/message"
+            });
+            ws.send(payload);
+        }
+
+        function sendPrivate() {
+            var userInput = document.getElementById("user").value;
+            var dropdownValue = document.getElementById("userDropdown").value;
+            var message = document.getElementById("privateMessage").value;
+
+            // If user input is empty, use the dropdown value
+            var user = userInput ? userInput : dropdownValue;
+
+            // Sending properly formatted JSON with client ID or dropdown user
+            var payload = JSON.stringify({
+                "payload": {
+                    "message": message,
+                    "type": 1,
+                    "user": user  // Include username from input or dropdown
+                },
+                "path": "/message"
+            });
+            ws.send(payload);
+        }
+    </script>
+
+</head>
+<body>
+<h1>WebSocket Test</h1>
+<div id="status">Disconnected</div>
+<button onclick="connect()">Connect</button>
+<label for="username">Username</label><input type="text" id="username" placeholder="Enter username...">
+<hr>
+<h3>Broadcast Message</h3>
+<input type="text" id="broadcastMessage" placeholder="Message to broadcast">
+<button onclick="sendBroadcast()">Send Broadcast</button>
+<hr>
+<h3>Private Message</h3>
+<input type="text" id="user" placeholder="username">
+<select id="userDropdown">
+    <option value="">Select a user</option>
+</select>
+<input type="text" id="privateMessage" placeholder="Private message">
+<button onclick="sendPrivate()">Send Private</button>
+<hr>
+<div id="messages"></div>
+</body>
+</html>
